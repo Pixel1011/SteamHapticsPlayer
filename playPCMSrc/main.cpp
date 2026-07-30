@@ -21,19 +21,11 @@ struct Args {
   std::string help;
 };
 
-constexpr int SAMPLES_PER_PACKET = 31;
-constexpr int BYTES_PER_FRAME = 2;
-constexpr int NEED_BYTES = SAMPLES_PER_PACKET * BYTES_PER_FRAME;
-constexpr int SAMPLE_RATE = 8000; // steam controller only supports up to signed 8 bit, 8khz
-const auto period = std::chrono::microseconds((SAMPLES_PER_PACKET * 1000000) / SAMPLE_RATE);
+TritonPCMMode mode = TritonPCMMode::Khz8_8Bit_ulaw;
+
 
 const std::string helpString =
-    "Usage: steam-haptics-singer.exe [-s] <file path>\n"
-    "  -s  Skip running the setup phase if you've already run it once and haven't restarted your controller\n";
-
-void reset(int) {
-  // aou.stop();
-}
+    "Usage: steam-haptics-singer.exe <file path>";
 
 template <typename ArgGetter>
 Args parseArgs(int argc, ArgGetter argAt) {
@@ -68,7 +60,20 @@ int runPlayer(const Args& args) {
   if (cont->type == ControllerType::Triton) c = static_cast<TritonController*>(cont);
   if (c == nullptr) return 1;
 
-  int loadResult = aou.load(args.filePath);
+  if (c->connectionType == TritonInterface::WIRED) {
+    // do wonder if itll be happy with that
+    //mode = TritonPCMMode::Khz8_16Bit;
+    // it was not happy with that
+    // idk i guess best audio quality we can do is 8khz 8bit ulaw
+    // also i swear to god i have been testing for so long that i am hallucinating hearing birdbrain
+    // help
+    //
+    // also if someone does make it work, remind me to fix my progress code because it doubles with 16 bit :p 
+    // also also idk if my thing of not including the last byte has any effect, though i think its ok as there is a length check anyway? does annoy me that 2 bits are being wasted per packet
+  }
+
+  
+  int loadResult = aou.load(args.filePath, mode);
   if (loadResult < 0) {
     if (loadResult == -2) {
       std::cout << "ffmpeg was not found on PATH\n";
@@ -82,11 +87,37 @@ int runPlayer(const Args& args) {
     return 1;
   }
 
-  signal(SIGINT, reset);
+  c->setupPCMStreaming(mode);
 
-  if (args.setup) c->setupPCMStreaming();
+  int SAMPLE_RATE = 8000;
+  int BYTES_PER_FRAME = 2;
+  int SAMPLES_PER_PACKET = 31;
+  int bytesPerPacket = 31;
 
-  byte primeBuf[NEED_BYTES];
+  if (mode == TritonPCMMode::Khz1_16Bit || mode == TritonPCMMode::Khz2_16Bit || mode == TritonPCMMode::Khz4_16Bit || mode == TritonPCMMode::Khz8_16Bit) {
+    BYTES_PER_FRAME = 4;
+    SAMPLES_PER_PACKET = 15;
+    bytesPerPacket = 30;
+  } 
+  
+  int NEED_BYTES = SAMPLES_PER_PACKET * BYTES_PER_FRAME;
+
+  if (mode == TritonPCMMode::Khz1_16Bit || mode == TritonPCMMode::Khz1_8Bit || mode == TritonPCMMode::Khz1_8Bit_ulaw) {
+    SAMPLE_RATE = 1000;
+  } else
+  if (mode == TritonPCMMode::Khz2_16Bit || mode == TritonPCMMode::Khz2_8Bit || mode == TritonPCMMode::Khz2_8Bit_ulaw) {
+    SAMPLE_RATE = 2000;
+  } else
+  if (mode == TritonPCMMode::Khz4_16Bit || mode == TritonPCMMode::Khz4_8Bit || mode == TritonPCMMode::Khz4_8Bit_ulaw) {
+    SAMPLE_RATE = 4000;
+  } else
+  if (mode == TritonPCMMode::Khz8_16Bit || mode == TritonPCMMode::Khz8_8Bit || mode == TritonPCMMode::Khz8_8Bit_ulaw) {
+    SAMPLE_RATE = 8000;
+  } 
+  
+  auto period = std::chrono::microseconds((SAMPLES_PER_PACKET * 1000000) / SAMPLE_RATE);
+
+  uint8_t primeBuf[NEED_BYTES];
   int pr = aou.getBytes(primeBuf, NEED_BYTES);
   (void)pr;
 
@@ -100,16 +131,16 @@ int runPlayer(const Args& args) {
   Utils::ProgressHelper progress(totalSteps, &start, NEED_BYTES, Utils::Mode::TIME);
 
   while (true) {
-    byte tmp[NEED_BYTES];
+    uint8_t tmp[NEED_BYTES];
     int r = aou.getBytes(tmp, NEED_BYTES);
     if (r <= 0) break;
     if (r < NEED_BYTES) std::memset(tmp + r, 0, NEED_BYTES - r); // s8 silence = 0
 
-    packet.length = 31;
+    packet.length = bytesPerPacket;
  
     for (int i = 0; i < SAMPLES_PER_PACKET; i++) {
-      byte left = tmp[i * 2];
-      byte right = tmp[i * 2 + 1];
+      uint8_t left = tmp[i * 2];
+      uint8_t right = tmp[i * 2 + 1];
       packet.left[i] = left;
       packet.right[i] = right;
     }
@@ -123,7 +154,6 @@ int runPlayer(const Args& args) {
   
   std::cout << std::endl;
 
-  reset(0);
   return 0;
 }
 

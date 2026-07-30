@@ -1,11 +1,163 @@
 #pragma once
 #include "SteamController.h"
-
+#include <mutex>
+#include <thread>
+#include <atomic>
+#define HID_FEATURE_REPORT_BYTES 64
 // have not tested 0x87 and 0x89. i could be completely wrong about them
+#pragma region structs
 #pragma pack(push, 1)
 
-typedef enum
+/*Structs taken directly from SDL code*/
+// ill just add this to not be shot
+/*
+  Simple DirectMedia Layer
+  Copyright (C) 2020 Valve Corporation
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+*/
+
+// feature report commands
+// Header for all host <==> target messages
+typedef struct
 {
+  unsigned char type;
+  unsigned char length;
+} FeatureReportHeader;
+
+// Generic controller settings structure
+typedef struct
+{
+  unsigned char settingNum;
+  unsigned short settingValue;
+} ControllerSetting;
+
+// Generic controller attribute structure
+typedef struct
+{
+  unsigned char attributeTag;
+  uint32_t attributeValue;
+} ControllerAttribute;
+
+// Generic controller settings structure
+typedef struct
+{
+  ControllerSetting settings[(HID_FEATURE_REPORT_BYTES - sizeof(FeatureReportHeader)) / sizeof(ControllerSetting)];
+} MsgSetSettingsValues, MsgGetSettingsValues, MsgGetSettingsDefaults, MsgGetSettingsMaxs;
+
+// Generic controller settings structure
+typedef struct
+{
+  ControllerAttribute attributes[(HID_FEATURE_REPORT_BYTES - sizeof(FeatureReportHeader)) / sizeof(ControllerAttribute)];
+} MsgGetAttributes;
+
+typedef struct
+{
+  unsigned char attributeTag;
+  char attributeValue[20];
+} MsgGetStringAttribute;
+
+typedef struct
+{
+  unsigned char mode;
+} MsgSetControllerMode;
+
+typedef struct
+{
+  FeatureReportHeader header;
+  union {
+    MsgSetSettingsValues setSettingsValues;
+    MsgGetSettingsValues getSettingsValues;
+    MsgGetSettingsMaxs getSettingsMaxs;
+    MsgGetSettingsDefaults getSettingsDefaults;
+    MsgGetAttributes getAttributes;
+    MsgSetControllerMode controllerMode;
+    MsgGetStringAttribute getStringAttribute;
+  } payload;
+
+} FeatureReportMsg;
+
+// hid commands
+
+enum EChargeState {
+  k_EChargeStateReset,
+  k_EChargeStateDischarging,
+  k_EChargeStateCharging,
+  k_EChargeStateSrcValidate,
+  k_EChargeStateChargingDone,
+};
+
+enum ETritonReportIDTypes {
+  ID_TRITON_CONTROLLER_STATE = 0x42,
+  ID_TRITON_BATTERY_STATUS = 0x43,
+  ID_TRITON_CONTROLLER_STATE_BLE = 0x45,
+  ID_TRITON_WIRELESS_STATUS_X = 0x46,
+  ID_TRITON_CONTROLLER_STATE_TIMESTAMP = 0x47,
+
+  ID_TRITON_WIRELESS_STATUS = 0x79,
+};
+
+enum ETritonWirelessState {
+  k_ETritonWirelessStateDisconnect = 1,
+  k_ETritonWirelessStateConnect = 2,
+};
+
+typedef enum {
+
+  TRITON_LBUTTON_A = 0x00000001,
+  TRITON_LBUTTON_B = 0x00000002,
+  TRITON_LBUTTON_X = 0x00000004,
+  TRITON_LBUTTON_Y = 0x00000008,
+
+  TRITON_HBUTTON_QAM = 0x00000010,
+  TRITON_LBUTTON_R3 = 0x00000020,
+  TRITON_LBUTTON_VIEW = 0x00000040,
+  TRITON_HBUTTON_R4 = 0x00000080,
+
+  TRITON_LBUTTON_R5 = 0x00000100,
+  TRITON_LBUTTON_R = 0x00000200,
+  TRITON_LBUTTON_DPAD_DOWN = 0x00000400,
+  TRITON_LBUTTON_DPAD_RIGHT = 0x00000800,
+
+  TRITON_LBUTTON_DPAD_LEFT = 0x00001000,
+  TRITON_LBUTTON_DPAD_UP = 0x00002000,
+  TRITON_LBUTTON_MENU = 0x00004000,
+  TRITON_LBUTTON_L3 = 0x00008000,
+
+  TRITON_LBUTTON_STEAM = 0x00010000,
+  TRITON_HBUTTON_L4 = 0x00020000,
+  TRITON_LBUTTON_L5 = 0x00040000,
+  TRITON_LBUTTON_L = 0x00080000,
+
+  TRITON_RIGHT_JOYSTICK_TOUCH = 0x00100000,
+  TRITON_RIGHT_TOUCHPAD_TOUCH = 0x00200000,
+  TRITON_RIGHT_TOUCHPAD_CLICK = 0x00400000,
+  TRITON_RIGHT_TRIGGER_CLICK = 0x00800000,
+
+  TRITON_LEFT_JOYSTICK_TOUCH = 0x01000000,
+  TRITON_LEFT_TOUCHPAD_TOUCH = 0x02000000,
+  TRITON_LEFT_TOUCHPAD_CLICK = 0x04000000,
+  TRITON_LEFT_TRIGGER_CLICK = 0x08000000,
+
+  TRITON_RIGHT_GRIP_TOUCH = 0x10000000,
+  TRITON_LEFT_GRIP_TOUCH = 0x20000000,
+} TritonButtons;
+
+typedef enum {
   RUMBLE = 0x80,
   PULSE = 0x81,
   COMMAND = 0x82,
@@ -20,70 +172,222 @@ typedef enum
   PCM_MONO_WITH_LENGTH = 0x89,
 } TritonReportIDs;
 
-/*Structs taken directly from SDL code*/
 typedef struct
 {
-    uint8_t type;
-    uint16_t intensity;
-    struct
-    {
-        uint16_t speed;
-        int8_t gain;
-    } left, right;
+  uint8_t type;
+  uint16_t intensity;
+  struct
+  {
+    uint16_t speed;
+    int8_t gain;
+  } left, right;
 } MsgHapticRumble;
 
 typedef struct
 {
-    uint8_t side;
-    uint16_t on_us;
-    uint16_t off_us;
-    uint16_t repeat_count;
-    uint16_t gain_db; 
+  uint8_t side;
+  uint16_t on_us;
+  uint16_t off_us;
+  uint16_t repeat_count;
+  uint16_t gain_db;
 } MsgHapticPulse;
 
 typedef struct
 {
-    uint8_t side;
-    uint8_t command;
-    int8_t gain_db;
+  uint8_t side;
+  uint8_t command;
+  int8_t gain_db;
 } MsgHapticCommand;
 
 typedef struct
 {
-    uint8_t side;
-    int8_t gain_db;
-    uint16_t frequency;
-    uint16_t duration_ms;
-    uint16_t lfo_freq;
-    uint8_t lfo_depth;
+  uint8_t side;
+  int8_t gain_db;
+  uint16_t frequency;
+  uint16_t duration_ms;
+  uint16_t lfo_freq;
+  uint8_t lfo_depth;
 } MsgHapticLfoTone;
 
 typedef struct
 {
-    uint8_t side;
-    int8_t gain_db;
-    uint16_t duration_ms;
-    struct
-    {
-        uint16_t frequency;
-    } start, end;
+  uint8_t side;
+  int8_t gain_db;
+  uint16_t duration_ms;
+  struct
+  {
+    uint16_t frequency;
+  } start, end;
 } MsgHapticLogSweep;
 
 typedef struct
 {
-    uint8_t side;
-    uint8_t script_id;
-    int8_t gain_db;
+  uint8_t side;
+  uint8_t script_id;
+  int8_t gain_db;
 } MsgHapticScript;
 
+typedef struct
+{
+  unsigned char ucChargeState; // EChargeState
+  unsigned char ucBatteryLevel;
+  unsigned short sBatteryVoltage;
+  unsigned short sSystemVoltage;
+  unsigned short sInputVoltage;
+  unsigned short sCurrent;
+  unsigned short sInputCurrent;
+  unsigned short sTemperature;
+} TritonBatteryStatus_t;
+
+typedef struct
+{
+  unsigned char state;
+} TritonWirelessStatus_t;
+
+typedef struct
+{
+  uint32_t timestamp;
+  short sAccelX;
+  short sAccelY;
+  short sAccelZ;
+
+  short sGyroX;
+  short sGyroY;
+  short sGyroZ;
+
+  short sGyroQuatW;
+  short sGyroQuatX;
+  short sGyroQuatY;
+  short sGyroQuatZ;
+} TritonMTUIMU_t;
+
+typedef struct {
+  uint32_t timestamp;
+  short sAccelX;
+  short sAccelY;
+  short sAccelZ;
+
+  short sGyroX;
+  short sGyroY;
+  short sGyroZ;
+} TritonMTUIMUNoQuat_t;
+
+typedef struct
+{
+  uint16_t timestamp;
+  short sAccelX;
+  short sAccelY;
+  short sAccelZ;
+
+  short sGyroX;
+  short sGyroY;
+  short sGyroZ;
+} TritonMTUIMUNoQuat32usTS_t;
+
+typedef struct
+{
+  uint8_t seq_num;
+  uint32_t buttons;
+  short sTriggerLeft;
+  short sTriggerRight;
+
+  short sLeftStickX;
+  short sLeftStickY;
+  short sRightStickX;
+  short sRightStickY;
+
+  short sLeftPadX;
+  short sLeftPadY;
+  unsigned short unPressureLeft;
+
+  short sRightPadX;
+  short sRightPadY;
+  unsigned short unPressureRight;
+  TritonMTUIMU_t imu;
+} TritonMTUFull_t;
+
+typedef struct {
+  uint8_t seq_num;
+  uint32_t buttons;
+  short sTriggerLeft;
+  short sTriggerRight;
+
+  short sLeftStickX;
+  short sLeftStickY;
+  short sRightStickX;
+  short sRightStickY;
+
+  short sLeftPadX;
+  short sLeftPadY;
+  unsigned short unPressureLeft;
+
+  short sRightPadX;
+  short sRightPadY;
+  unsigned short unPressureRight;
+  TritonMTUIMUNoQuat_t imu;
+} TritonMTUNoQuat_t;
+
+// New Ibex packet that adds a timestamp to the trackpad sampling
+// and reduces the size of the IMU timestamp.  Timestamps are now 16 bits
+typedef struct
+{
+  uint8_t seq_num;
+  uint32_t buttons;
+  short sTriggerLeft;
+  short sTriggerRight;
+
+  short sLeftStickX;
+  short sLeftStickY;
+  short sRightStickX;
+  short sRightStickY;
+
+  unsigned short unTrackpadTimestamp;
+  short sLeftPadX;
+  short sLeftPadY;
+  unsigned short unPressureLeft;
+
+  short sRightPadX;
+  short sRightPadY;
+  unsigned short unPressureRight;
+
+  TritonMTUIMUNoQuat32usTS_t imu;
+} TritonMTUNoQuat32TS_t;
+
 /*Structs found via RE*/
+
+enum class TritonPCMMode {
+  Khz8_16Bit,
+  Khz4_16Bit,
+  Khz2_16Bit,
+  Khz1_16Bit,
+
+  Khz8_8Bit,
+  Khz4_8Bit,
+  Khz2_8Bit,
+  Khz1_8Bit,
+
+  Khz8_8Bit_ulaw,
+  Khz4_8Bit_ulaw,
+  Khz2_8Bit_ulaw,
+  Khz1_8Bit_ulaw
+};
+
+enum class TritonPCMOperation {
+  DISABLE = 1,
+  ENABLE = 2
+};
+
+enum class TritonInterface {
+  PUCK,
+  WIRED
+};
 
 typedef struct
 {
   // still dont quite know what any of these 3 do, however these are best guesses
   uint8_t operation;
   uint8_t side;
-  uint8_t param;
+  uint8_t param; // i believe this is some sort of bitfield or Enum, no idea.
 } MsgHapticPCMMode;
 
 typedef struct
@@ -97,7 +401,6 @@ typedef struct
   // <=31
   uint8_t length;
 
-  // signed 8 bit pcm le
   char left[31];
   char right[31];
 
@@ -109,21 +412,34 @@ typedef struct
   uint8_t side;
   char data[61];
 } MsgHapticPCMMonoWithLength;
+
 #pragma pack(pop)
+#pragma endregion
 
-
+// yes im kinda turning this into a general purpose class for the sc2
+// idk im bored
 class TritonController : public SteamController {
-  private:
-    hid_device *hid_handle;
+private:
+  hid_device* hid_handle;
 
-  public:
-    TritonController(hid_device* handle);
-    void close() override;
-    int playNote(int channel, int note, int velocity) override;
-    int playFrequency(int channel, double frequency, int velocity) override;
-    int sendPCMMode(MsgHapticPCMMode* packet);
-    //s8, 8khz
-    int sendPCMStereo(MsgHapticPCMStereo* packet);
-    int sendRaw(byte bytes[], size_t length) override;
-    void setupPCMStreaming();
+  std::atomic<bool> running = false;
+  std::thread pollThread;
+  std::mutex stateMutex;
+
+public:
+  TritonInterface connectionType;
+
+  TritonController(hid_device* handle, TritonInterface connection);
+  void close() override;
+  int playNote(int channel, int note, int velocity) override;
+  int playFrequency(int channel, double frequency, int velocity) override;
+  int sendPCMMode(MsgHapticPCMMode* packet);
+  // s8, 8khz
+  int sendPCMStereo(MsgHapticPCMStereo* packet);
+  int sendRaw(uint8_t bytes[], size_t length) override;
+  void setupPCMStreaming(TritonPCMMode mode);
+  // reading
+  int readRaw(uint8_t buff[], size_t length);
+
+  // polling
 };

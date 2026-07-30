@@ -2,13 +2,14 @@
 #include "Constants.h"
 #include "Utils.h"
 #include <cmath>
+#include <cstring>
 #include <iomanip>
 #include <iostream>
 #include <thread>
-#include <cstring>
 
-TritonController::TritonController(hid_device* handle) : SteamController(ControllerType::Triton) {
+TritonController::TritonController(hid_device* handle, TritonInterface connection) : SteamController(ControllerType::Triton) {
   this->hid_handle = handle;
+  this->connectionType = connection;
 }
 
 void TritonController::close() {
@@ -22,7 +23,7 @@ int TritonController::playNote(int channel, int note, int velocity) {
 }
 
 int TritonController::playFrequency(int channel, double frequency, int velocity) {
-  byte packet[10] = {0};
+  uint8_t packet[10] = {0};
   if (frequency == -1) {
     // This prevents the controller from rebooting when using rumble motors and drifting out of tune
     packet[0] = LFO_TONE;
@@ -43,7 +44,7 @@ int TritonController::playFrequency(int channel, double frequency, int velocity)
 
 int TritonController::sendPCMMode(MsgHapticPCMMode* packet) {
   constexpr size_t size = sizeof(MsgHapticPCMMode);
-  
+
   unsigned char buff[size + 1];
   buff[0] = PCM_MODE;
   memcpy(&buff[1], packet, size);
@@ -52,70 +53,115 @@ int TritonController::sendPCMMode(MsgHapticPCMMode* packet) {
 
 int TritonController::sendPCMStereo(MsgHapticPCMStereo* packet) {
   constexpr size_t size = sizeof(MsgHapticPCMStereo);
-  
+
   unsigned char buff[size + 1] = {0};
   buff[0] = PCM_STEREO;
   memcpy(&buff[1], packet, size);
   return sendRaw(buff, sizeof(buff));
 }
 
-int TritonController::sendRaw(byte packet[], size_t length) {
+int TritonController::sendRaw(uint8_t packet[], size_t length) {
   int r = hid_write(this->hid_handle, packet, length);
   if (r < 0) {
-    wprintf(L"Send Error, hid_error: %ls\n", hid_error(this->hid_handle));
+    printf("Send Error, hid_error: %ls\n", hid_error(this->hid_handle));
     exit(1);
   }
   return r;
 }
 
-void TritonController::setupPCMStreaming() {
-  std::cout << "Running setup for pcm streaming! You may hear some weird noises" << std::endl;
+int TritonController::readRaw(uint8_t buff[], size_t length) {
+  int r = hid_read(this->hid_handle, buff, length);
+  if (r < 0) {
+    printf("Read Error, hid_error: %ls\n", hid_error(this->hid_handle));
+    exit(1);
+  }
+  return r;
+}
+
+void TritonController::setupPCMStreaming(TritonPCMMode mode) {
+  // old implementation
+  /*//std::cout << "Running setup for pcm streaming! You may hear some weird noises" << std::endl;
   // not entirely sure how these 2 actually make the pcm streaming work
   // channels:
   // 0 - only left audio plays
   // 1 - only right audio plays
   // 3-5 on their own, nothing plays
   // but then 0,3,4,5 seems to sound okay??
+  // 0xff param i believe causes the steam controller firmware to crash (bitmask?)
   // idk im just leaving it at this to not risk audio quality, which they do seem to affect from testing
   // only needs to be setup once though per restart of the controller. then any pcm streamed to it will play just fine
 
-  byte channels[] = {0, 1, 2, 3, 4, 5};
-  byte params[] = {0, 1, 2, 4, 8, 16, 32, 64, 128};
-  int reps = 10;
+  uint8_t channels[] = {0};
+  uint8_t params[] = {4};
+  int reps = 0;
 
   int totalSteps = (sizeof(channels) / sizeof(channels[0])) * (sizeof(params) / sizeof(params[0])) * reps;
   std::string aou = "Setup: ";
   Utils::ProgressHelper helper(totalSteps, &aou, 1, Utils::Mode::PROGRESSBAR);
 
-  for (byte ch : channels) {
-    for (byte p : params) {
+  // send one 0
+ // MsgHapticPCMMode modePacket;
+ // modePacket.operation = 0x02;
+ // modePacket.side = 0;
+ // modePacket.param = 0;
+
+ // sendPCMMode(&modePacket);
+
+
+  for (uint8_t ch : channels) {
+    for (uint8_t p : params) {
       MsgHapticPCMMode modePacket;
       modePacket.operation = 0x02;
       modePacket.side = ch;
       modePacket.param = p;
 
       sendPCMMode(&modePacket);
-      std::this_thread::sleep_for(std::chrono::milliseconds(15));
       for (int rep = 0; rep < reps; rep++) {
         MsgHapticPCMStereo packet;
         packet.length = 31;
 
         for (int i = 0; i < 31; i++) {
-          byte sample = ((i / 4) % 2) ? 0xFF : 0x00;
-          packet.left[i] = sample;
-          packet.right[i] = sample;
+          packet.left[i] = 0x00;
+          packet.right[i] = 0x00;
         }
         sendPCMStereo(&packet);
         helper.step();
         // fun fact, windows likes to lie if it spent 1ms waiting when in reality it was spending >10ms
-        std::this_thread::sleep_for(std::chrono::milliseconds(15));
+        std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
-      }
-    }
+        }
+        }
+        }
+        std::cout << std::endl
+        << "Setup finished."
+        << std::endl
+        << "If your audio sounds good, you can skip this step with -s"
+        << std::endl;*/
+  // new imp from data by iczero (ty :D)
+
+  // play on all actuators
+  // i would make this an enum but i still think its wrong, 0,1 is clearly playing on internal haptics
+  //3,4 sounds like left tp and right internal, no idea
+  // 0 TP_LEFT, 1 TP_RIGHT, 3 INT_LEFT, 4 INT_RIGHT
+
+  uint8_t channels[] = {2,5};
+
+  for (uint8_t ch : channels) {
+    MsgHapticPCMMode packetDisable;
+    packetDisable.operation = static_cast<uint8_t>(TritonPCMOperation::DISABLE);
+    packetDisable.side = ch;
+    packetDisable.param = 0;
+
+    sendPCMMode(&packetDisable);
   }
-  std::cout << std::endl
-            << "Setup finished." 
-            << std::endl
-            << "If your audio sounds good, you can skip this step with -s"
-            << std::endl;
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+
+  for (uint8_t ch : channels) {
+    MsgHapticPCMMode packet;
+    packet.operation = static_cast<uint8_t>(TritonPCMOperation::ENABLE);
+    packet.side = ch;
+    packet.param = static_cast<uint8_t>(mode);
+    sendPCMMode(&packet);
+  }
+
 }

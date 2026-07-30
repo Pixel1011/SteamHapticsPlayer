@@ -3,7 +3,7 @@ all: range steam-haptics-player measure
 release: all
 
 
-CXXFLAGS = -std=c++20 -Wall -Werror -static
+CXXFLAGS = -std=c++20 -Wall -Werror
 
 DEBUG_FLAGS = -g -Og
 RELEASE_FLAGS = -O2
@@ -17,6 +17,7 @@ endif
 ifeq ($(OS),Windows_NT)
 HIDAPI_PKG ?= hidapi
 UNICODE_FLAG ?= -municode
+CXXFLAGS += -static
 else
 HIDAPI_PKG ?= hidapi-hidraw
 UNICODE_FLAG ?=

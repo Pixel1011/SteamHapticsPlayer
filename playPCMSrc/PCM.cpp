@@ -1,19 +1,4 @@
 #include "PCM.h"
-#include <cerrno>
-#include <cstdlib>
-#include <cstring>
-#include <fstream>
-#include <iostream>
-#include <sstream>
-#include <stdexcept>
-
-#ifdef _WIN32
-#define POPEN wpopen
-#define PCLOSE pclose
-#else
-#define POPEN popen
-#define PCLOSE pclose
-#endif
 
 bool ffmpegAvailable() {
 #ifdef _WIN32
@@ -27,8 +12,9 @@ PCM::PCM() : filePath(), pipe(nullptr), ended(false), fileSize(0) {}
 
 PCM::~PCM() {}
 
-int PCM::load(const path_t& filePath) {
+int PCM::load(const path_t& filePath, TritonPCMMode mode) {
   this->filePath = filePath;
+  this->audioFormat = mode;
 
   if (this->filePath.empty()) {
     return -1;
@@ -48,25 +34,73 @@ int PCM::load(const path_t& filePath) {
 }
 
 path_t PCM::buildCommand() const {
-#ifdef _WIN32
-  std::wostringstream cmd;
+  using enum TritonPCMMode;
 
-  cmd << L"ffmpeg -hide_banner -loglevel error "
-      << L"-i \"" << filePath << L"\" "
-      // maybe wii add volume later
-      //<< L"-af acompressor=threshold=-16dB:ratio=3:attack=5:release=80,highshelf=f=400:g=8,volume=2 -f s8 -ac 2 -ar 8000 -acodec pcm_s8 pipe:1";
-      << L"-f s8 -ac 2 -ar 8000 -acodec pcm_s8 pipe:1";
-  return cmd.str();
-#else
+  std::string pcmFormat;
+
+  switch (audioFormat) {
+    // 16 bit
+    case Khz8_16Bit:
+      pcmFormat = "-f s16le -ac 2 -ar 8000 -acodec pcm_s16le";
+      break;
+    case Khz4_16Bit:
+      pcmFormat = "-f s16le -ac 2 -ar 4000 -acodec pcm_s16le";
+      break;
+    case Khz2_16Bit:
+      pcmFormat = "-f s16le -ac 2 -ar 2000 -acodec pcm_s16le";
+      break;
+    case Khz1_16Bit:
+      pcmFormat = "-f s16le -ac 2 -ar 1000 -acodec pcm_s16le";
+      break;
+
+    // 8 bit
+    case Khz8_8Bit:
+      pcmFormat = "-f s8 -ac 2 -ar 8000 -acodec pcm_s8";
+      break;
+    case Khz4_8Bit:
+      pcmFormat = "-f s8 -ac 2 -ar 4000 -acodec pcm_s8";
+      break;
+    case Khz2_8Bit:
+      pcmFormat = "-f s8 -ac 2 -ar 2000 -acodec pcm_s8";
+      break;
+    case Khz1_8Bit:
+      pcmFormat = "-f s8 -ac 2 -ar 1000 -acodec pcm_s8";
+      break;
+
+    // 8 bit ulaw
+    case Khz8_8Bit_ulaw:
+      pcmFormat = "-f mulaw -ac 2 -ar 8000 -acodec pcm_mulaw";
+      break;
+    case Khz4_8Bit_ulaw:
+      pcmFormat = "-f mulaw -ac 2 -ar 4000 -acodec pcm_mulaw";
+      break;
+    case Khz2_8Bit_ulaw:
+      pcmFormat = "-f mulaw -ac 2 -ar 2000 -acodec pcm_mulaw";
+      break;
+    case Khz1_8Bit_ulaw:
+      pcmFormat = "-f mulaw -ac 2 -ar 1000 -acodec pcm_mulaw";
+      break;
+  }
+
+  if (pcmFormat.empty()) throw "PCM format is empty, something has gone very wrong";
   std::ostringstream cmd;
-
   cmd << "ffmpeg -hide_banner -loglevel error "
+#ifdef _WIN32
+      << "-i \"" << text::to_utf8(filePath) << "\" "
+#else
       << "-i \"" << filePath << "\" "
-      << "-f s8 -ac 2 -ar 8000 -acodec pcm_s8 pipe:1";
-  return cmd.str();
+#endif
+      // maybe wii add volume later
+      //<< "-af acompressor=threshold=-16dB:ratio=3:attack=5:release=80,highshelf=f=400:g=8,volume=2 -f s8 -ac 2 -ar 8000 -acodec pcm_s8 pipe:1";
+      << pcmFormat << " "
+      << "pipe:1";
+
+#ifdef _WIN32
+  return text::to_wide(cmd.str());
+#else
+  return std::string(cmd.str());
 #endif
 }
-
 
 // load file into memory
 void PCM::start() {
@@ -91,7 +125,7 @@ void PCM::start() {
     uint8_t buff[64];
     if (!pipe) break;
     std::size_t bytesRead = std::fread(buff, 1, 64, pipe);
-    
+
     if (bytesRead == 0) {
       if (std::feof(pipe) || std::ferror(pipe)) {
         ended = true;
@@ -128,7 +162,6 @@ int PCM::getBytes(uint8_t* buffer, int size) {
   if (readPointer >= pcmBytes.size()) ended = true;
   return static_cast<int>(toCopy);
 }
-
 
 void PCM::reset() {
   this->pcmBytes.clear();

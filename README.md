@@ -2,6 +2,8 @@
 
 This project allows stereo audio to be streamed from a file to the haptics of a Steam controller (2026), practically allowing anything to be played on it's haptic motors.
 
+[![Watch the video here!](https://img.youtube.com/vi/iLLmQzjEhYs/0.jpg)](http://www.youtube.com/watch?v=iLLmQzjEhYs "Still Alive on a Steam Controller")
+
 ## How To
 
 
@@ -35,8 +37,7 @@ OR
 
 
 ### Usage from command prompt:
-	Usage: play-pcm.exe [-s] <file path>
-          -s  Skip running the setup phase (if you have already run it once and havent restarted your controller)
+	Usage: play-pcm.exe <file path>
 
 ### Tips
   - Try pressing the controller down into a solid object (although not too hard), it will make the sound **much** louder

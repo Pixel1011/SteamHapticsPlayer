@@ -65,7 +65,7 @@ int main(int argc, char* argv[]) {
     return 1;
   }
 
-  byte packet[64] = {};
+  uint8_t packet[64] = {};
   try {
     for (int i = 1; i < argc; ++i) {
       std::string byteStr = argv[i];
@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
       if (value < 0 || value > 0xFF) {
         throw std::out_of_range("byte out of range");
       }
-      packet[i - 1] = static_cast<byte>(value);
+      packet[i - 1] = static_cast<uint8_t>(value);
     }
   } catch (...) {
     std::cerr << "Error: invalid hex byte input\n";

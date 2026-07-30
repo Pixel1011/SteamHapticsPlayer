@@ -4,6 +4,7 @@
             "name": "Win32",
             "includePath": [
                 "${workspaceFolder}/**",
+                "C:/msys64/ucrt64/include/hidapi/**",
                 "C:/msys64/ucrt64/include/**",
                 "${workspaceFolder}/sharedSrc"
             ],
