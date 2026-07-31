@@ -95,6 +95,9 @@ Checks for ffmpeg
 [v1.0.0]
 Initial release!
 
+## maybe future stuff
+ - volume control
+ - looping music
 
 I spent alot of time and effort reverse engineering the Steam controller's firmware to find the HID commands needed to do this so i would appreciate the stars very much!
 
