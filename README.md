@@ -82,6 +82,8 @@ Use 8 bit µlaw for puck instead, for better audio quality
 Simplify pcm setup immensely
 Removed -s option as pcm setup is much faster
 
+[v1.3.1]
+Compile statically (so i dont have to ship dll files)
 [v1.3.0]
 Added progress bar, reworked how files are loaded
 
