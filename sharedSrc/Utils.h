@@ -25,6 +25,7 @@ private:
   int totalSteps = 0;
   int steps = 1;
   Mode mode;
+  int timescale = 1;
   std::string *startString;
 
   int progress = 0;
@@ -39,6 +40,7 @@ public:
   // i am going insane, i have absolutely no idea why a segfault is occuring due to the string, i pray using a pointer fixes it;
   ProgressHelper(int totalSteps, std::string *start, int step = 1, Mode mode = Mode::DEFAULT);
   ~ProgressHelper();
+  void setTimescale(int timescale);
   void step();
 };
 } // namespace Utils

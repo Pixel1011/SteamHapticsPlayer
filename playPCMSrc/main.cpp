@@ -86,12 +86,12 @@ int runPlayer(const Args& args) {
   int SAMPLE_RATE = 8000;
   int BYTES_PER_FRAME = 2;
   int SAMPLES_PER_PACKET = 31;
-  int bytesPerPacket = 31;
+  int bytesPerChannel = 31;
 
   if (mode == TritonPCMMode::Khz1_16Bit || mode == TritonPCMMode::Khz2_16Bit || mode == TritonPCMMode::Khz4_16Bit || mode == TritonPCMMode::Khz8_16Bit) {
     BYTES_PER_FRAME = 4;
     SAMPLES_PER_PACKET = 15;
-    bytesPerPacket = 30;
+    bytesPerChannel = 30;
   } 
   
   int NEED_BYTES = SAMPLES_PER_PACKET * BYTES_PER_FRAME;
@@ -126,8 +126,12 @@ int runPlayer(const Args& args) {
 
   MsgHapticPCMStereo packet;
   int totalSteps = aou.fileSize - NEED_BYTES;
+  int step = NEED_BYTES;
   std::string start = "Playing: ";
-  Utils::ProgressHelper progress(totalSteps, &start, NEED_BYTES, Utils::Mode::TIME);
+
+  Utils::ProgressHelper progress(totalSteps, &start, step, Utils::Mode::TIME);
+
+  if (BYTES_PER_FRAME == 4) progress.setTimescale(2);
 
   while (true) {
     uint8_t tmp[NEED_BYTES];
@@ -135,7 +139,7 @@ int runPlayer(const Args& args) {
     if (r <= 0) break;
     if (r < NEED_BYTES) std::memset(tmp + r, 0, NEED_BYTES - r); // s8 silence = 0
 
-    packet.length = bytesPerPacket;
+    packet.length = bytesPerChannel;
  
     for (int i = 0; i < SAMPLES_PER_PACKET; i++) {
       if (BYTES_PER_FRAME == 4) {
