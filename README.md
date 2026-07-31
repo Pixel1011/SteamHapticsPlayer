@@ -46,15 +46,10 @@ OR
   - Try pressing the controller down into a solid object (although not too hard), it will make the sound **much** louder
 
 ### Troubleshooting
-- **No audio:**  
-  - Ensure you ran the setup phase (do not use `-s`) at least once since the controller was last started.
-- **Garbled audio:**  
-  - Re-run without `-s`. If issues persist, restart the controller and run setup again.
-- **Loud static immediately on launch:**  
-  - Restart the controller and try again.
 - **ffmpeg not found**  
   - Install `ffmpeg` and ensure it is on your `PATH` (`winget install ffmpeg` on Windows).
-- **if all else fails:**
+- **if anything else fails:**
+  - Try restart the program, use another audio file to test,
   - Try connect the steam controller directly via USB and then try again.
 
 
@@ -80,6 +75,13 @@ pacman -S mingw-w64-ucrt-x86_64-gcc \
 make
 ```
 ## Changelog
+[v1.4.0]
+(Thanks @iczero for your knowledge!)
+Add support for (and use) 16bit 8khz audio on wired
+Use 8 bit µlaw for puck instead, for better audio quality
+Simplify pcm setup immensely
+Removed -s option as pcm setup is much faster
+
 [v1.3.0]
 Added progress bar, reworked how files are loaded
 
