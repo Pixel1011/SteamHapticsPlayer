@@ -62,14 +62,8 @@ int runPlayer(const Args& args) {
 
   if (c->connectionType == TritonInterface::WIRED) {
     // do wonder if itll be happy with that
-    //mode = TritonPCMMode::Khz8_16Bit;
-    // it was not happy with that
-    // idk i guess best audio quality we can do is 8khz 8bit ulaw
-    // also i swear to god i have been testing for so long that i am hallucinating hearing birdbrain
-    // help
-    //
-    // also if someone does make it work, remind me to fix my progress code because it doubles with 16 bit :p 
-    // also also idk if my thing of not including the last byte has any effect, though i think its ok as there is a length check anyway? does annoy me that 2 bits are being wasted per packet
+    mode = TritonPCMMode::Khz8_16Bit;
+    // after writing code where i was not sleep deprived, it was happy with it. :D
   }
 
   
@@ -123,6 +117,11 @@ int runPlayer(const Args& args) {
 
   auto nextPacketTime = std::chrono::steady_clock::now();
 
+  // puck has poll rate of 500hz, with 64 bit packets, which = about 256kbit/s, which is technically enough, but with it also feeding data, not enough bandwidth, so 16 bit for wired only
+  // wired controller has poll rate of 1000hz, so 512kbit/s
+  if (mode == TritonPCMMode::Khz8_16Bit) std::cout << "Using stereo 16bit 8khz audio for wired mode. (256kbps)\n";
+  if (mode == TritonPCMMode::Khz8_8Bit_ulaw) std::cout << "Using stereo 8bit 8khz µlaw audio for puck mode. (128kbps)\n";
+
   std::cout << "Playing audio...\n";
 
   MsgHapticPCMStereo packet;
@@ -139,10 +138,27 @@ int runPlayer(const Args& args) {
     packet.length = bytesPerPacket;
  
     for (int i = 0; i < SAMPLES_PER_PACKET; i++) {
-      uint8_t left = tmp[i * 2];
-      uint8_t right = tmp[i * 2 + 1];
-      packet.left[i] = left;
-      packet.right[i] = right;
+      if (BYTES_PER_FRAME == 4) {
+        // 60 bytes over 15 samples
+        // 16 bit
+        size_t base = i*4;
+        uint8_t leftLow = tmp[base];
+        uint8_t leftHigh = tmp[base + 1];
+        uint8_t rightLow = tmp[base + 2];
+        uint8_t rightHigh = tmp[base + 3];
+
+        packet.left[i * 2] = leftLow;
+        packet.left[i * 2 + 1] = leftHigh;
+        packet.right[i * 2] = rightLow;
+        packet.right[i * 2 + 1] = rightHigh;
+      } else {
+        // 8 bit
+        // 62 bytes over 31 samples
+        uint8_t left = tmp[i * 2];
+        uint8_t right = tmp[i * 2 + 1];
+        packet.left[i] = left;
+        packet.right[i] = right;
+      }
     }
 
     c->sendPCMStereo(&packet);
