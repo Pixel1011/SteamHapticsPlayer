@@ -14,6 +14,9 @@ This project allows stereo audio to be streamed from a file to the haptics of a 
 #### **Note For puck audio:**
 - When streaming audio via the Puck, you may encounter popping noises or other audio quality issues due to packet loss. Wired should normally be much cleaner.
 
+---
+[**Download the latest build here!**](https://github.com/Pixel1011/SteamHapticsPlayer/releases/latest)
+
 #### On Windows
 1. Open Powershell in the file directory where you have extracted the executable
 2. (skip if already installed) Install FFmpeg with `winget install ffmpeg`
