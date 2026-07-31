@@ -76,10 +76,10 @@ make
 ```
 ## Changelog
 [v1.4.0]
-(Thanks @iczero for your knowledge!)
-Add support for (and use) 16bit 8khz audio on wired
-Use 8 bit µlaw for puck instead, for better audio quality
-Simplify pcm setup immensely
+(Thanks @iczero for your knowledge!), 
+Add support for (and use) 16bit 8khz audio on wired, 
+Use 8 bit µlaw for puck instead, for better audio quality, 
+Simplify pcm setup immensely, 
 Removed -s option as pcm setup is much faster
 
 [v1.3.1]
@@ -92,7 +92,7 @@ Added progress bar, reworked how files are loaded
 Fixed controller detection with puck (Thanks @CrazyCritic89)
 
 [v1.1.0]
-Linux support
+Linux support, 
 Checks for ffmpeg
 
 [v1.0.0]
