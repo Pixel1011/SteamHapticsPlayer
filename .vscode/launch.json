@@ -8,7 +8,7 @@
       "program": "${workspaceFolder}\\steam-haptics-player.exe",
       "args": [
         "-s",
-        "M:\\Plex\\Music\\Cubism\\Cubibibibism.mp3"
+        "M:\\Plex\\Music\\Portal 2 Soundtrack\\Portal2-3x26_Still_Alive_Radio Mix_Clean.flac"
       ],
       "cwd": "${workspaceFolder}",
       "stopAtEntry": false,
