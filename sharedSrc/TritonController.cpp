@@ -1,6 +1,5 @@
 #include "TritonController.h"
 #include "Constants.h"
-#include "Utils.h"
 #include <cmath>
 #include <cstring>
 #include <iomanip>
@@ -37,7 +36,7 @@ int TritonController::playFrequency(int channel, double frequency, int velocity)
     packet.lfo_depth = 0;
   }
 
-  constexpr size_t size = sizeof(MsgHapticPCMStereo);
+  constexpr size_t size = sizeof(MsgHapticLfoTone);
 
   unsigned char buff[size + 1] = {0};
   buff[0] = LFO_TONE;
@@ -79,6 +78,21 @@ int TritonController::readRaw(uint8_t buff[], size_t length) {
     exit(1);
   }
   return r;
+}
+
+TritonMTUFull_t TritonController::getFullReport() {
+  std::lock_guard<std::mutex> lock(stateMutex);
+  return _state;
+}
+
+TritonBatteryStatus_t TritonController::getBatteryStatus() {
+  std::lock_guard<std::mutex> lock(batteryMutex);
+  return _battery;
+}
+
+bool TritonController::isPressed(TritonButtons btn) {
+  std::lock_guard<std::mutex> lock(stateMutex);
+  return (_state.buttons & btn) != 0;
 }
 
 void TritonController::setupPCMStreaming(TritonPCMMode mode) {
@@ -144,10 +158,10 @@ void TritonController::setupPCMStreaming(TritonPCMMode mode) {
 
   // play on all actuators
   // i would make this an enum but i still think its wrong, 0,1 is clearly playing on internal haptics
-  //3,4 sounds like left tp and right internal, no idea
+  // 3,4 sounds like left tp and right internal, no idea
   // 0 TP_LEFT, 1 TP_RIGHT, 3 INT_LEFT, 4 INT_RIGHT
 
-  uint8_t channels[] = {2,5};
+  uint8_t channels[] = {2, 5};
 
   for (uint8_t ch : channels) {
     MsgHapticPCMMode packetDisable;
@@ -166,5 +180,56 @@ void TritonController::setupPCMStreaming(TritonPCMMode mode) {
     packet.param = static_cast<uint8_t>(mode);
     sendPCMMode(&packet);
   }
+}
 
+void TritonController::startPoll() {
+  if (pollThread.joinable()) return;
+  running.store(true);
+  pollThread = std::thread([this]() {
+    pollLoop();
+  });
+}
+
+void TritonController::stopPoll() {
+  running.store(false);
+  if (pollThread.joinable()) pollThread.join();
+}
+
+void TritonController::pollLoop() {
+  while (running.load()) {
+    uint8_t buff[64] = {0};
+    int read = readRaw(buff, 64);
+    if (read == 0) continue;
+    uint8_t reportID = buff[0];
+
+    // remove report id;
+    std::memmove(buff, buff + 1, 63);
+
+    switch (static_cast<ETritonReportIDTypes>(reportID)) {
+      case ID_TRITON_CONTROLLER_STATE:
+        {
+          TritonMTUFull_t packet{};
+          memcpy(&packet, buff, 53);
+          std::lock_guard<std::mutex> lock(stateMutex);
+          this->_state = packet;
+          stateCounter++;
+          break;
+        }
+      case ID_TRITON_BATTERY_STATUS:
+        {
+          TritonBatteryStatus_t battPacket{};
+          memcpy(&battPacket, buff, 14);
+          std::lock_guard<std::mutex> lock(batteryMutex);
+          this->_battery = battPacket;
+          batteryCounter++;
+          break;
+        }
+      case ID_TRITON_CONTROLLER_STATE_BLE:
+      case ID_TRITON_CONTROLLER_STATE_TIMESTAMP:
+      case ID_TRITON_WIRELESS_STATUS:
+      case ID_TRITON_WIRELESS_STATUS_X:
+      default:
+        break;
+    }
+  }
 }

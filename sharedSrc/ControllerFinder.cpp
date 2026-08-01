@@ -33,6 +33,8 @@ TritonController* ControllerFinder::getController() {
   ControllerType type;
 
   hid_device* hid_handle;
+
+  // could also be ble but bleh
   bool tritonWired = false;
   // Open Steam Controller device
 

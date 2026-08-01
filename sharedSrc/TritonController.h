@@ -437,11 +437,18 @@ private:
   std::atomic<bool> running = false;
   std::thread pollThread;
   std::mutex stateMutex;
-  void reader();
-
-public:
+  TritonMTUFull_t _state;
+  
+  std::mutex batteryMutex;
+  TritonBatteryStatus_t _battery;
+  
+  void pollLoop();
+  
+  public:
+  std::atomic<uint64_t> stateCounter{0};
+  std::atomic<uint64_t> batteryCounter{0};
   TritonInterface connectionType;
-
+  
   TritonController(hid_device* handle, TritonInterface connection);
   void close();
   int playNote(int channel, int note, int velocity);
@@ -452,9 +459,12 @@ public:
   int sendRaw(uint8_t bytes[], size_t length);
   void setupPCMStreaming(TritonPCMMode mode);
   // reading
-  void startRead();
-  void stopRead();
+  void startPoll();
+  void stopPoll();
   int readRaw(uint8_t buff[], size_t length);
-  
-  // polling
+
+  TritonMTUFull_t getFullReport();
+  TritonBatteryStatus_t getBatteryStatus();
+  bool isPressed(TritonButtons btn);
+  // maybe i do pressed/released event queue if bored
 };

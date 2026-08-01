@@ -1,4 +1,5 @@
 #include "ControllerFinder.h"
+#include "Utils.h"
 #include <Constants.h>
 #include <chrono>
 #include <cmath>
@@ -18,19 +19,31 @@ int main(int argc, char* argv[]) {
   if (c == nullptr) {
     return 1;
   }
+  c->startPoll();
 
   auto start = std::chrono::steady_clock::now();
+  uint64_t initcount = c->stateCounter.load();
   int count = 0;
-  while (count < 5000) {
-    //unsigned char buf[64];
-    ///int n = hid_read(c->hid_handle, buf, sizeof(buf));
-    //if (n > 0 && buf[0] == 0x45) count++;
+  int toCount = 5000;
+
+  uint64_t realcount = 0;
+  std::string str = std::string("Count: ");
+
+  Utils::ProgressHelper helper(toCount, &str);
+
+  while (count < toCount) {
+    if (c->stateCounter.load() - initcount > static_cast<uint64_t>(count)) {
+      helper.step();
+      count++;
+      realcount = c->stateCounter.load() - initcount;
+    }
   }
+  printf("\n");
   auto elapsed = std::chrono::duration<double>(
                      std::chrono::steady_clock::now() - start)
                      .count();
-  printf("0x45 reports: %d in %.2fs = %.1f Hz\n", count, elapsed, count / elapsed);
-
+  printf("0x45 reports: %d in %.2fs = %.1f Hz\n", toCount, elapsed, toCount / elapsed);
+  printf("actual count: %lld", realcount);
   c->close();
   return 0;
 }
