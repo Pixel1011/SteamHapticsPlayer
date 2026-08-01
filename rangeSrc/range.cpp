@@ -41,13 +41,7 @@ double map(T value, T in_min, T in_max, T out_min, T out_max) {
 }
 
 int main(int argc, char* argv[]) {
-  SteamController* cont = finder.getController();
-  if (cont == nullptr) {
-    return 1;
-  }
-  if (cont->type == ControllerType::Triton) {
-    c = static_cast<TritonController*>(cont);
-  }
+  TritonController* c = finder.getController();
   if (c == nullptr) {
     return 1;
   }

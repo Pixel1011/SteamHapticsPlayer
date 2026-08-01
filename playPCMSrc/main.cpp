@@ -24,7 +24,7 @@ struct Args {
 TritonPCMMode mode = TritonPCMMode::Khz8_8Bit_ulaw;
 
 
-const std::string helpString = "Usage: steam-haptics-singer.exe <file path>\n";
+const std::string helpString = "Usage: .\\steam-haptics-singer <file path>\n";
 
 template <typename ArgGetter>
 Args parseArgs(int argc, ArgGetter argAt) {
@@ -54,10 +54,10 @@ int runPlayer(const Args& args) {
     return 1;
   }
 
-  SteamController* cont = finder.getController();
-  if (cont == nullptr) return 1;
-  if (cont->type == ControllerType::Triton) c = static_cast<TritonController*>(cont);
-  if (c == nullptr) return 1;
+  TritonController* c = finder.getController();
+  if (c == nullptr) {
+    return 1;
+  }
 
   if (c->connectionType == TritonInterface::WIRED) {
     // do wonder if itll be happy with that

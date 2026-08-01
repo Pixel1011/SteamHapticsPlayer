@@ -1,8 +1,9 @@
 #pragma once
-#include "SteamController.h"
 #include <mutex>
 #include <thread>
 #include <atomic>
+#include <hidapi.h>
+#include <cstdint>
 #define HID_FEATURE_REPORT_BYTES 64
 // have not tested 0x87 and 0x89. i could be completely wrong about them
 #pragma region structs
@@ -227,6 +228,7 @@ typedef struct
   int8_t gain_db;
 } MsgHapticScript;
 
+//14
 typedef struct
 {
   unsigned char ucChargeState; // EChargeState
@@ -239,11 +241,13 @@ typedef struct
   unsigned short sTemperature;
 } TritonBatteryStatus_t;
 
+//1
 typedef struct
 {
   unsigned char state;
 } TritonWirelessStatus_t;
 
+//24
 typedef struct
 {
   uint32_t timestamp;
@@ -261,6 +265,7 @@ typedef struct
   short sGyroQuatZ;
 } TritonMTUIMU_t;
 
+//16
 typedef struct {
   uint32_t timestamp;
   short sAccelX;
@@ -272,6 +277,7 @@ typedef struct {
   short sGyroZ;
 } TritonMTUIMUNoQuat_t;
 
+//14
 typedef struct
 {
   uint16_t timestamp;
@@ -284,6 +290,7 @@ typedef struct
   short sGyroZ;
 } TritonMTUIMUNoQuat32usTS_t;
 
+//29+24 53
 typedef struct
 {
   uint8_t seq_num;
@@ -306,6 +313,7 @@ typedef struct
   TritonMTUIMU_t imu;
 } TritonMTUFull_t;
 
+//45
 typedef struct {
   uint8_t seq_num;
   uint32_t buttons;
@@ -329,6 +337,8 @@ typedef struct {
 
 // New Ibex packet that adds a timestamp to the trackpad sampling
 // and reduces the size of the IMU timestamp.  Timestamps are now 16 bits
+
+//45
 typedef struct
 {
   uint8_t seq_num;
@@ -352,20 +362,21 @@ typedef struct
 
   TritonMTUIMUNoQuat32usTS_t imu;
 } TritonMTUNoQuat32TS_t;
+// end of sdl stuff
 
-/*Structs found via RE*/
+
 
 enum class TritonPCMMode {
   Khz8_16Bit,
   Khz4_16Bit,
   Khz2_16Bit,
   Khz1_16Bit,
-
+  
   Khz8_8Bit,
   Khz4_8Bit,
   Khz2_8Bit,
   Khz1_8Bit,
-
+  
   Khz8_8Bit_ulaw,
   Khz4_8Bit_ulaw,
   Khz2_8Bit_ulaw,
@@ -381,6 +392,7 @@ enum class TritonInterface {
   PUCK,
   WIRED
 };
+/*Structs found via RE*/
 
 typedef struct
 {
@@ -418,28 +430,31 @@ typedef struct
 
 // yes im kinda turning this into a general purpose class for the sc2
 // idk im bored
-class TritonController : public SteamController {
+class TritonController {
 private:
   hid_device* hid_handle;
 
   std::atomic<bool> running = false;
   std::thread pollThread;
   std::mutex stateMutex;
+  void reader();
 
 public:
   TritonInterface connectionType;
 
   TritonController(hid_device* handle, TritonInterface connection);
-  void close() override;
-  int playNote(int channel, int note, int velocity) override;
-  int playFrequency(int channel, double frequency, int velocity) override;
+  void close();
+  int playNote(int channel, int note, int velocity);
+  int playFrequency(int channel, double frequency, int velocity);
   int sendPCMMode(MsgHapticPCMMode* packet);
   // s8, 8khz
   int sendPCMStereo(MsgHapticPCMStereo* packet);
-  int sendRaw(uint8_t bytes[], size_t length) override;
+  int sendRaw(uint8_t bytes[], size_t length);
   void setupPCMStreaming(TritonPCMMode mode);
   // reading
+  void startRead();
+  void stopRead();
   int readRaw(uint8_t buff[], size_t length);
-
+  
   // polling
 };

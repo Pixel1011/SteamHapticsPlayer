@@ -7,7 +7,7 @@
 #include <iostream>
 #include <thread>
 
-TritonController::TritonController(hid_device* handle, TritonInterface connection) : SteamController(ControllerType::Triton) {
+TritonController::TritonController(hid_device* handle, TritonInterface connection) {
   this->hid_handle = handle;
   this->connectionType = connection;
 }
@@ -23,23 +23,26 @@ int TritonController::playNote(int channel, int note, int velocity) {
 }
 
 int TritonController::playFrequency(int channel, double frequency, int velocity) {
-  uint8_t packet[10] = {0};
+  MsgHapticLfoTone packet{};
   if (frequency == -1) {
     // This prevents the controller from rebooting when using rumble motors and drifting out of tune
-    packet[0] = LFO_TONE;
-    packet[1] = channel;
+    packet.side = channel;
   } else {
     int frequencyValue = static_cast<int>(frequency);
-    packet[0] = 0x83;
-    packet[1] = channel;
-    packet[2] = velocity;
-    packet[3] = frequencyValue & 0xFF;
-    packet[4] = (frequencyValue >> 8) & 0xFF;
-    packet[5] = 0xFF;
-    // 1 = 0.25 secs (i think)
-    packet[6] = 0x64;
+    packet.side = channel;
+    packet.gain_db = velocity;
+    packet.frequency = frequencyValue;
+    packet.duration_ms = 0xff64;
+    packet.lfo_freq = 0;
+    packet.lfo_depth = 0;
   }
-  return sendRaw(packet, sizeof(packet));
+
+  constexpr size_t size = sizeof(MsgHapticPCMStereo);
+
+  unsigned char buff[size + 1] = {0};
+  buff[0] = LFO_TONE;
+  memcpy(&buff[1], &packet, size);
+  return sendRaw(buff, sizeof(buff));
 }
 
 int TritonController::sendPCMMode(MsgHapticPCMMode* packet) {

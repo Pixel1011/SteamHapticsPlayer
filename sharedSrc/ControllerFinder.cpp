@@ -29,7 +29,7 @@ ControllerFinder::ControllerFinder() {
 }
 
 // basically completely stolen from SteamHapticsSinger
-SteamController* ControllerFinder::getController() {
+TritonController* ControllerFinder::getController() {
   ControllerType type;
 
   hid_device* hid_handle;

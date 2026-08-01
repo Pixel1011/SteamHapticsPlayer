@@ -14,13 +14,7 @@ TritonController* c = nullptr;
 ControllerFinder finder;
 
 int main(int argc, char* argv[]) {
-  SteamController* cont = finder.getController();
-  if (cont == nullptr) {
-    return 1;
-  }
-  if (cont->type == ControllerType::Triton) {
-    c = static_cast<TritonController*>(cont);
-  }
+  TritonController* c = finder.getController();
   if (c == nullptr) {
     return 1;
   }

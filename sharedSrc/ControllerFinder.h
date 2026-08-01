@@ -1,9 +1,15 @@
 #pragma once
-#include "SteamController.h"
 #include "TritonController.h"
 #include <iostream>
 #include <cstdint>
 
+enum class ControllerType {
+	None,
+	Original,
+	Triton,
+	Jupiter,
+	Galileo
+};
 
 class ControllerFinder {
   private:
@@ -12,6 +18,6 @@ class ControllerFinder {
   ControllerFinder();
   ~ControllerFinder() = default;
 
-  SteamController* getController();
+  TritonController* getController();
   
 };
