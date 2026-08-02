@@ -27,15 +27,16 @@ CXXFLAGS += `pkg-config --libs --cflags $(HIDAPI_PKG)`
 
 
 SHARED_SRC = $(wildcard sharedSrc/*.cpp sharedSrc/*/*.cpp sharedSrc/*.c sharedSrc/*/*.c)
+TRITON_SRC := $(wildcard TritonLib/src/*.cpp TritonLib/src/*/*.cpp TritonLib/src/*.c TritonLib/src/*/*.c)
 RANGE_SRC = $(wildcard rangeSrc/*.cpp rangeSrc/*/*.cpp rangeSrc/*.c rangeSrc/*/*.c)
 PCM_SRC = $(wildcard playPCMSrc/*.cpp playPCMSrc/*/*.cpp playPCMSrc/*.c playPCMSrc/*/*.c)
 MEASURE_SRC = $(wildcard measureSrc/*.cpp measureSrc/*/*.cpp measureSrc/*.c measureSrc/*/*.c)
 
-range: $(RANGE_SRC) $(SHARED_SRC)
-	g++ -IsharedSrc -o range $^ $(CXXFLAGS)
+range: $(RANGE_SRC) $(SHARED_SRC) $(TRITON_SRC)
+	g++ -IsharedSrc -ITritonLib/include -o range $^ $(CXXFLAGS)
 
-steam-haptics-player: ${PCM_SRC} ${SHARED_SRC}
-	g++ -IsharedSrc $(UNICODE_FLAG) -o steam-haptics-player $^ $(CXXFLAGS)
+steam-haptics-player: ${PCM_SRC} ${SHARED_SRC} $(TRITON_SRC)
+	g++ -IsharedSrc -ITritonLib/include $(UNICODE_FLAG) -o steam-haptics-player $^ $(CXXFLAGS)
 
-measure: ${MEASURE_SRC} ${SHARED_SRC}
-	g++ -IsharedSrc -o measure $^ $(CXXFLAGS)
+measure: ${MEASURE_SRC} ${SHARED_SRC} $(TRITON_SRC)
+	g++ -IsharedSrc -ITritonLib/include -o measure $^ $(CXXFLAGS)
