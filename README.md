@@ -42,7 +42,7 @@ OR
 	Usage: play-pcm.exe <file path>
 
 ### Tips
-  - Try pressing the controller down into a solid object (although not too hard), it will make the sound **much** louder
+  - Try pressing the controller (while upright) down into a solid object (although not too hard), it will make the sound **much** louder
 
 ### Troubleshooting
 - **ffmpeg not found**  
