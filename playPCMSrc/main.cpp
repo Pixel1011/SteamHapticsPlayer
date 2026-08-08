@@ -1,5 +1,5 @@
 #include "PCM.h"
-#include <ControllerFinder.h>
+#include <TritonFinder.h>
 #include <TritonController.h>
 #include <chrono>
 #include <csignal>
@@ -11,7 +11,7 @@
 #include <Utils.h>
 
 TritonController* c = nullptr;
-ControllerFinder finder;
+TritonFinder finder;
 // if anyone is wondering why this is called aou, consult this video https://www.youtube.com/watch?v=kiFCFlAUy_8
 PCM aou;
 

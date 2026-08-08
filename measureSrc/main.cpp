@@ -1,4 +1,4 @@
-#include "ControllerFinder.h"
+#include "TritonFinder.h"
 #include "Utils.h"
 #include <Constants.h>
 #include <chrono>
@@ -12,7 +12,7 @@
 #include <thread>
 
 TritonController* c = nullptr;
-ControllerFinder finder;
+TritonFinder finder;
 
 int main(int argc, char* argv[]) {
   TritonController* c = finder.getController();

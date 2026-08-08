@@ -8,7 +8,7 @@
 #include <string>
 #include <thread>
 #include <Constants.h>
-#include "ControllerFinder.h"
+#include "TritonFinder.h"
 
 // mainly for now to figure out wtf i am doing
 // but will eventually use to figure out the range of notes the steam controller can make nicely
@@ -24,7 +24,7 @@
 7 - nothing
 */
 TritonController* c = nullptr;
-ControllerFinder finder;
+TritonFinder finder;
 
 void reset(int) {
   // just guessing honestly
