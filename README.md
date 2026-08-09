@@ -5,6 +5,7 @@ This project allows stereo audio to be streamed from a file to the haptics of a 
 [<img src="https://img.youtube.com/vi/xfg437QMPSw/maxresdefault.jpg" alt="Want you gone on a Steam Controller" width="500"/>](https://www.youtube.com/watch?v=xfg437QMPSw)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N6145I0V)
+
 No need to donate, though is greatly appreciated!
 
 I also made [Steam Controller Battery Monitor](https://github.com/Pixel1011/Steam-Controller-Battery-Monitor), since there currently isn't a convenient way to view the controller's exact battery percentage.
