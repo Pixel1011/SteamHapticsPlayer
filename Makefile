@@ -6,7 +6,7 @@ release: all
 CXXFLAGS = -std=c++20 -Wall -Werror
 
 DEBUG_FLAGS = -g -Og
-RELEASE_FLAGS = -O2
+RELEASE_FLAGS = -Os
 
 ifeq ($(filter release,$(MAKECMDGOALS)), release)
   CXXFLAGS += $(RELEASE_FLAGS)
@@ -34,10 +34,10 @@ PCM_SRC = $(wildcard playPCMSrc/*.cpp playPCMSrc/*/*.cpp playPCMSrc/*.c playPCMS
 MEASURE_SRC = $(wildcard measureSrc/*.cpp measureSrc/*/*.cpp measureSrc/*.c measureSrc/*/*.c)
 
 range: $(RANGE_SRC) $(SHARED_SRC) $(TRITON_SRC)
-	g++ -IsharedSrc -ITritonLib/include -o range $^ $(CXXFLAGS)
+	g++ -IsharedSrc -ITritonLib/include -o range $^ $(CXXFLAGS) $(LDFLAGS)
 
 steam-haptics-player: ${PCM_SRC} ${SHARED_SRC} $(TRITON_SRC)
-	g++ -IsharedSrc -ITritonLib/include $(UNICODE_FLAG) -o steam-haptics-player $^ $(CXXFLAGS)
+	g++ -IsharedSrc -ITritonLib/include $(UNICODE_FLAG) -o steam-haptics-player $^ $(CXXFLAGS) $(LDFLAGS)
 
 measure: ${MEASURE_SRC} ${SHARED_SRC} $(TRITON_SRC)
-	g++ -IsharedSrc -ITritonLib/include -o measure $^ $(CXXFLAGS)
+	g++ -IsharedSrc -ITritonLib/include -o measure $^ $(CXXFLAGS) $(LDFLAGS)
