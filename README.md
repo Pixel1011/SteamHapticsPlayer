@@ -2,7 +2,7 @@
 
 This project allows stereo audio to be streamed from a file to the haptics of a Steam controller (2026), practically allowing anything to be played on it's haptic motors.
 
-<img src="https://img.youtube.com/vi/xfg437QMPSw/maxresdefault.jpg" alt="Want you gone on a Steam Controller" width="500"/>
+[<img src="https://img.youtube.com/vi/xfg437QMPSw/maxresdefault.jpg" alt="Want you gone on a Steam Controller" width="500"/>](https://www.youtube.com/watch?v=xfg437QMPSw)
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/N4N6145I0V)
 No need to donate, though is greatly appreciated!
