@@ -107,7 +107,10 @@ int runPlayer(const Args& args) {
 }
 
 #ifdef _WIN32
+#include <windows.h>
+
 int wmain(int argc, wchar_t* argv[]) {
+  SetConsoleOutputCP(CP_UTF8);
   Args args = parseArgs(argc, [&](int index) -> path_t {
     return std::wstring(argv[index]);
   });
