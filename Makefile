@@ -20,7 +20,8 @@ UNICODE_FLAG ?= -municode
 CXXFLAGS += -static
 else
 HIDAPI_PKG ?= hidapi-hidraw
-UNICODE_FLAG ?=
+CXXFLAGS += -fPIC
+LDFLAGS += -pie
 endif
 
 CXXFLAGS += `pkg-config --libs --cflags $(HIDAPI_PKG)`
