@@ -80,96 +80,26 @@ int runPlayer(const Args& args) {
     return 1;
   }
 
-  c->setupPCMStreaming(mode);
-
-  int SAMPLE_RATE = 8000;
-  int BYTES_PER_FRAME = 2;
-  int SAMPLES_PER_PACKET = 31;
-  int bytesPerChannel = 31;
-
-  if (mode == TritonPCMMode::Khz1_16Bit || mode == TritonPCMMode::Khz2_16Bit || mode == TritonPCMMode::Khz4_16Bit || mode == TritonPCMMode::Khz8_16Bit) {
-    BYTES_PER_FRAME = 4;
-    SAMPLES_PER_PACKET = 15;
-    bytesPerChannel = 30;
-  } 
-  
-  int NEED_BYTES = SAMPLES_PER_PACKET * BYTES_PER_FRAME;
-
-  if (mode == TritonPCMMode::Khz1_16Bit || mode == TritonPCMMode::Khz1_8Bit || mode == TritonPCMMode::Khz1_8Bit_ulaw) {
-    SAMPLE_RATE = 1000;
-  } else
-  if (mode == TritonPCMMode::Khz2_16Bit || mode == TritonPCMMode::Khz2_8Bit || mode == TritonPCMMode::Khz2_8Bit_ulaw) {
-    SAMPLE_RATE = 2000;
-  } else
-  if (mode == TritonPCMMode::Khz4_16Bit || mode == TritonPCMMode::Khz4_8Bit || mode == TritonPCMMode::Khz4_8Bit_ulaw) {
-    SAMPLE_RATE = 4000;
-  } else
-  if (mode == TritonPCMMode::Khz8_16Bit || mode == TritonPCMMode::Khz8_8Bit || mode == TritonPCMMode::Khz8_8Bit_ulaw) {
-    SAMPLE_RATE = 8000;
-  } 
-  
-  auto period = std::chrono::microseconds((SAMPLES_PER_PACKET * 1000000) / SAMPLE_RATE);
-
-  uint8_t primeBuf[NEED_BYTES];
-  int pr = aou.getBytes(primeBuf, NEED_BYTES);
-  (void)pr;
-
-  auto nextPacketTime = std::chrono::steady_clock::now();
-
-  // puck has poll rate of 500hz, with 64 bit packets, which = about 256kbit/s, which is technically enough, but with it also feeding data, not enough bandwidth, so 16 bit for wired only
-  // wired controller has poll rate of 1000hz, so 512kbit/s
   if (mode == TritonPCMMode::Khz8_16Bit) std::cout << "Using stereo 16bit 8khz audio for wired mode. (256kbps)\n";
   if (mode == TritonPCMMode::Khz8_8Bit_ulaw) std::cout << "Using stereo 8bit 8khz µlaw audio for puck mode. (128kbps)\n";
 
   std::cout << "Playing audio...\n";
 
-  MsgHapticPCMStereo packet;
-  int totalSteps = aou.fileSize - NEED_BYTES;
-  int step = NEED_BYTES;
   std::string start = "Playing: ";
+  std::optional<Utils::ProgressHelper> progress;
+  const uint8_t* data = aou.pcmBytes.data();
+  
+  int timescale = 1;
+  if (mode == TritonPCMMode::Khz8_16Bit) timescale = 2;
 
-  Utils::ProgressHelper progress(totalSteps, &start, step, Utils::Mode::TIME);
-
-  if (BYTES_PER_FRAME == 4) progress.setTimescale(2);
-
-  while (true) {
-    uint8_t tmp[NEED_BYTES];
-    int r = aou.getBytes(tmp, NEED_BYTES);
-    if (r <= 0) break;
-    if (r < NEED_BYTES) std::memset(tmp + r, 0, NEED_BYTES - r); // s8 silence = 0
-
-    packet.length = bytesPerChannel;
- 
-    for (int i = 0; i < SAMPLES_PER_PACKET; i++) {
-      if (BYTES_PER_FRAME == 4) {
-        // 60 bytes over 15 samples
-        // 16 bit
-        size_t base = i*4;
-        uint8_t leftLow = tmp[base];
-        uint8_t leftHigh = tmp[base + 1];
-        uint8_t rightLow = tmp[base + 2];
-        uint8_t rightHigh = tmp[base + 3];
-
-        packet.left[i * 2] = leftLow;
-        packet.left[i * 2 + 1] = leftHigh;
-        packet.right[i * 2] = rightLow;
-        packet.right[i * 2 + 1] = rightHigh;
-      } else {
-        // 8 bit
-        // 62 bytes over 31 samples
-        uint8_t left = tmp[i * 2];
-        uint8_t right = tmp[i * 2 + 1];
-        packet.left[i] = left;
-        packet.right[i] = right;
-      }
+  c->playStereoAudio(const_cast<uint8_t*>(data), aou.fileSize, mode, [&](int step) {
+    if (!progress) {
+      progress.emplace(aou.fileSize, &start, step, Utils::Mode::TIME);
+      progress->setTimescale(timescale);
     }
-
-    c->sendPCMStereo(&packet);
-    progress.step();
-    nextPacketTime += period;
-
-    while (std::chrono::steady_clock::now() < nextPacketTime) {}
-  }
+    progress->step();
+  });
+  if (c->playThread.joinable()) c->playThread.join();
   
   std::cout << std::endl;
 

@@ -31,7 +31,6 @@ private:
   path_t filePath;
   FILE* pipe = nullptr;
   bool ended = false;
-  std::vector<uint8_t> pcmBytes = std::vector<uint8_t>();
   size_t readPointer = 0;
   TritonPCMMode audioFormat;
   static constexpr int CHUNK_SIZE = 8;
@@ -40,6 +39,7 @@ private:
   void start();
   
   public:
+  std::vector<uint8_t> pcmBytes = std::vector<uint8_t>();
   std::uintmax_t fileSize;
   PCM();
   ~PCM();

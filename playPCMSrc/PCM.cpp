@@ -80,6 +80,10 @@ path_t PCM::buildCommand() const {
     case Khz1_8Bit_ulaw:
       pcmFormat = "-f mulaw -ac 2 -ar 1000 -acodec pcm_mulaw";
       break;
+
+    case None:
+      exit(1);
+      break;
   }
 
   if (pcmFormat.empty()) throw "PCM format is empty, something has gone very wrong";
