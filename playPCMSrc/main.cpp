@@ -23,8 +23,11 @@ struct Args {
 
 TritonPCMMode mode = TritonPCMMode::Khz8_8Bit_ulaw;
 
-
+#ifdef _WIN32
 const std::string helpString = "Usage: .\\steam-haptics-player <file path>\n";
+#else
+const std::string helpString = "Usage: ./steam-haptics-player <file path>\n";
+#endif
 
 template <typename ArgGetter>
 Args parseArgs(int argc, ArgGetter argAt) {

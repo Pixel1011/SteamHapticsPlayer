@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
                      std::chrono::steady_clock::now() - start)
                      .count();
   printf("0x45 reports: %d in %.2fs = %.1f Hz\n", toCount, elapsed, toCount / elapsed);
-  printf("actual count: %lld", realcount);
+  printf("actual count: %ld", realcount);
   c->close();
   return 0;
 }
