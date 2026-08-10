@@ -6,7 +6,9 @@ release: all
 CXXFLAGS = -std=c++20 -Wall -Werror
 
 DEBUG_FLAGS = -g -Og
-RELEASE_FLAGS = -Os
+
+# -Os results in linker error regarding std::basic_string ???? but -O2 compiles and works fine????
+RELEASE_FLAGS = -O2
 
 ifeq ($(filter release,$(MAKECMDGOALS)), release)
   CXXFLAGS += $(RELEASE_FLAGS)
