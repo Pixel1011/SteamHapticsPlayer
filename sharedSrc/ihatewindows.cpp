@@ -8,7 +8,7 @@
 #endif
 
 
-#include <Windows.h>
+#include <windows.h>
 
 #include <cstddef>
 #include <limits>
@@ -19,9 +19,7 @@ namespace
 {
     int checked_size(std::size_t size)
     {
-        if (size > static_cast<std::size_t>(std::numeric_limits<int>::max()))
-            throw std::length_error("String is too large to convert");
-
+        if (size > static_cast<std::size_t>(std::numeric_limits<int>::max())) throw std::length_error("String is too large to convert");
         return static_cast<int>(size);
     }
 

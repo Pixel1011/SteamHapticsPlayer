@@ -43,7 +43,8 @@ int main(int argc, char* argv[]) {
                      std::chrono::steady_clock::now() - start)
                      .count();
   printf("0x45 reports: %d in %.2fs = %.1f Hz\n", toCount, elapsed, toCount / elapsed);
-  printf("actual count: %ld", realcount);
+  // i do ld, it complains, i do ldd, it still complains (only on windows too :) ) AAAAAAAAAAAAAAAAAAA
+  printf("actual count: %ld", static_cast<long int>(realcount));
   c->close();
   return 0;
 }
