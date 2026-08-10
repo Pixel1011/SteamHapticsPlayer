@@ -49,7 +49,7 @@ OR
 
 
 ### Usage from command prompt:
-	Usage: play-pcm.exe <file path>
+	Usage: steam-haptics-singer.exe <file path>
 
 ### Tips
   - Try pressing the controller (while upright) down into a solid object, it will make the sound **much** louder
