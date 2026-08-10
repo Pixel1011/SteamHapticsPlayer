@@ -1,7 +1,6 @@
 steam-haptics-singer 
 *.mid
 *.midi
-SC_Singer
 *.opus
 *.wav
 *.exe
@@ -12,5 +11,5 @@ measure
 
 ReverseEngineering/hmm
 PCM
-SteamHapticsSingerSrc
 dist
+build
