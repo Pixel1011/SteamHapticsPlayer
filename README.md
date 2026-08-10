@@ -86,6 +86,10 @@ pacman -S mingw-w64-ucrt-x86_64-gcc \
 make
 ```
 ## Changelog
+[v1.4.1]
+Fix for windows to actually show µ symbol instead of mojibake
+Support for SteamOS and Steam Machine's internal puck
+
 [v1.4.0]
 (Thanks @iczero for your knowledge!), 
 Add support for (and use) 16bit 8khz audio on wired, 
