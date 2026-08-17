@@ -1,28 +1,31 @@
-.PHONY: all release clean FORCE
-all: range steam-haptics-player measure
-release: all
-
-CXXFLAGS = -std=c++20 -Wall -Werror
-DEBUG_FLAGS = -g -Og
-# -Os results in linker error regarding std::basic_string ???? but -O2 compiles and works fine????
-RELEASE_FLAGS = -O2
-
-ifeq ($(filter release,$(MAKECMDGOALS)), release)
-  CXXFLAGS += $(RELEASE_FLAGS)
-else
-  CXXFLAGS += $(DEBUG_FLAGS)
-endif
 
 ifeq ($(OS),Windows_NT)
 HIDAPI_PKG ?= hidapi
 UNICODE_FLAG ?= -municode
 LDFLAGS += -static
 BUILD_DIR := build/win
+EXT := .exe
 else
 HIDAPI_PKG ?= hidapi-hidraw
 CXXFLAGS += -fPIC
 LDFLAGS += -pie
 BUILD_DIR := build/linux
+EXT :=
+endif
+
+.PHONY: all release clean FORCE
+all: range$(EXT) steam-haptics-player$(EXT) measure$(EXT)
+release: all
+
+CXXFLAGS = -std=c++20 -Wall -Werror
+DEBUG_FLAGS = -g -Og
+# -Os results in linker error regarding std::basic_string ???? but -O2 compiles and works fine???? - only on windows msy2 tho
+RELEASE_FLAGS = -O2
+
+ifeq ($(filter release,$(MAKECMDGOALS)), release)
+  CXXFLAGS += $(RELEASE_FLAGS)
+else
+  CXXFLAGS += $(DEBUG_FLAGS)
 endif
 
 CXXFLAGS += $(shell pkg-config --cflags $(HIDAPI_PKG))
@@ -52,20 +55,20 @@ $(FLAGS_FILE): FORCE
 	@printf '%s\n' '$(CXXFLAGS)' | cmp -s - $@ || printf '%s\n' '$(CXXFLAGS)' > $@
 
 
-range: $(RANGE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ)
-	g++ $(LDFLAGS) -o range $(RANGE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ) $(LDLIBS)
+range$(EXT): $(RANGE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ)
+	g++ $(LDFLAGS) -o $@ $(RANGE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ) $(LDLIBS) -lwinmm
 ifeq ($(filter release,$(MAKECMDGOALS)), release)
 	strip $@
 endif
 
-steam-haptics-player: $(PCM_OBJ) $(SHARED_OBJ) $(TRITON_OBJ)
+steam-haptics-player$(EXT): $(PCM_OBJ) $(SHARED_OBJ) $(TRITON_OBJ)
 	g++ $(LDFLAGS) $(UNICODE_FLAG) -o $@ $(PCM_OBJ) $(SHARED_OBJ) $(TRITON_OBJ) $(LDLIBS)
 ifeq ($(filter release,$(MAKECMDGOALS)), release)
 	strip $@
 endif
 
-measure: $(MEASURE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ)
-	g++ $(LDFLAGS) -o measure $(MEASURE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ) $(LDLIBS)
+measure$(EXT) : $(MEASURE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ)
+	g++ $(LDFLAGS) -o $@ $(MEASURE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ) $(LDLIBS)
 ifeq ($(filter release,$(MAKECMDGOALS)), release)
 	strip $@
 endif
