@@ -21,6 +21,15 @@ int main(int argc, char* argv[]) {
   }
   c->startPoll();
 
+  FeatureReportMsg msg{};
+  msg.header.type = ID_GET_SETTINGS_VALUES;
+  msg.header.length = sizeof(ControllerSetting);
+  msg.payload.getSettingsValues.settings[0].settingNum = SETTING_FRAME_RATE;
+  c->sendFeatureReport(&msg, sizeof(msg));
+
+  return 0;
+
+
   auto start = std::chrono::steady_clock::now();
   uint64_t initcount = c->stateCounter.load();
   int count = 0;
