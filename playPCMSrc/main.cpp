@@ -62,7 +62,7 @@ int runPlayer(const Args& args) {
     return 1;
   }
 
-  if (c->connectionType == TritonInterface::WIRED) {
+  if (c->connectionType == ETritonPairType::k_ETritonPairType_Wireless) {
     // do wonder if itll be happy with that
     mode = TritonPCMMode::Khz8_16Bit;
     // after writing code where i was not sleep deprived, it was happy with it. :D
