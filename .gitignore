@@ -10,6 +10,10 @@ steam-haptics-player
 measure
 
 ReverseEngineering/hmm
+ReverseEngineering/Steam
+
+# just hide latest one for now
+ReverseEngineering/FW-6A628345
 PCM
 dist
 build
