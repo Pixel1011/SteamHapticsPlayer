@@ -16,7 +16,7 @@ TritonFinder finder;
 PCM aou;
 
 struct Args {
-  bool setup = true;
+  bool loop = false;
   path_t filePath;
   std::string help;
 };
@@ -37,8 +37,9 @@ Args parseArgs(int argc, ArgGetter argAt) {
     path_t arg = argAt(i);
     std::string argStr = std::filesystem::path(arg).string();
 
-    if (argStr == "-s") {
-      args.setup = false;
+    if (argStr == "-l" || argStr == "--loop") {
+      args.loop = true;
+    } else if ("--ffmpegArgs") {
     } else if (!argStr.empty() && argStr[0] == '-') {
       args.help = helpString;
       return args;
@@ -62,7 +63,7 @@ int runPlayer(const Args& args) {
     return 1;
   }
 
-  if (c->connectionType == ETritonPairType::k_ETritonPairType_Wireless) {
+  if (c->connectionType == ETritonPairType::k_ETritonPairType_Wired) {
     // do wonder if itll be happy with that
     mode = TritonPCMMode::Khz8_16Bit;
     // after writing code where i was not sleep deprived, it was happy with it. :D
@@ -122,7 +123,7 @@ int wmain(int argc, wchar_t* argv[]) {
 #else
 int main(int argc, char* argv[]) {
   Args args = parseArgs(argc, [&](int index) -> path_t {
-    return std::filesystem::path(argv[index]).string();
+    return std::string(argv[index]);
   });
   return runPlayer(args);
 }
