@@ -41,6 +41,7 @@ public:
   ProgressHelper(int totalSteps, std::string *start, int step = 1, Mode mode = Mode::DEFAULT);
   ~ProgressHelper();
   void setTimescale(int timescale);
+  int getProgress();
   void step();
 };
 } // namespace Utils

@@ -12,9 +12,10 @@ PCM::PCM() : filePath(), pipe(nullptr), ended(false), fileSize(0) {}
 
 PCM::~PCM() {}
 
-int PCM::load(const path_t& filePath, TritonPCMMode mode) {
+int PCM::load(const path_t& filePath, TritonPCMMode mode, std::string ffmpegArgs) {
   this->filePath = filePath;
   this->audioFormat = mode;
+  if (!ffmpegArgs.empty()) this->extraArgs = ffmpegArgs;
 
   if (this->filePath.empty()) {
     return -1;
@@ -90,17 +91,19 @@ path_t PCM::buildCommand() const {
   std::ostringstream cmd;
   cmd << "ffmpeg -hide_banner -loglevel error "
 #ifdef _WIN32
-      << "-i \"" << text::to_utf8(filePath) << "\" "
+      << "-i \"" << std::filesystem::path(filePath).string() << "\" "
 #else
       << "-i \"" << filePath << "\" "
 #endif
       // maybe wii add volume later
       //<< "-af acompressor=threshold=-16dB:ratio=3:attack=5:release=80,highshelf=f=400:g=8,volume=2 -f s8 -ac 2 -ar 8000 -acodec pcm_s8 pipe:1";
-      << pcmFormat << " "
-      << "pipe:1";
+      << pcmFormat 
+      << " "
+      << extraArgs
+      << " pipe:1";
 
 #ifdef _WIN32
-  return text::to_wide(cmd.str());
+  return std::filesystem::path(cmd.str());
 #else
   return std::string(cmd.str());
 #endif
@@ -120,14 +123,15 @@ void PCM::start() {
   pipe = POPEN(command.c_str(), "r");
 #endif
   if (!pipe) {
-    std::cerr << "popen failed, errno=" << errno << " (" << strerror(errno) << ")\n";
+    std::cerr << "popen failed, errno=" << errno << " (" << strerror(errno ) << ")\n";
     throw std::runtime_error("Could not start ffmpeg");
   }
   ended = false;
   fileSize = 0;
+
   while (!ended) {
-    uint8_t buff[64];
     if (!pipe) break;
+    uint8_t buff[64];
     std::size_t bytesRead = std::fread(buff, 1, 64, pipe);
 
     if (bytesRead == 0) {
@@ -138,6 +142,7 @@ void PCM::start() {
     }
     this->pcmBytes.insert(this->pcmBytes.end(), buff, buff + bytesRead);
   }
+
   if (pipe) {
     PCLOSE(pipe);
     pipe = nullptr;

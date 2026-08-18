@@ -72,7 +72,11 @@ void ProgressHelper::setTimescale(int timescale) {
   this->timescale = timescale;
 }
 
-void ProgressHelper::step() {
+int ProgressHelper::getProgress() {
+  return ((double)progress / (double)totalSteps) * 100.0;
+}
+
+void ProgressHelper:: step() {
   progress += steps;
   if (progress > totalSteps) progress = totalSteps;
 
@@ -99,5 +103,4 @@ void ProgressHelper::step() {
   std::cout << std::flush;
   lastStatusLength = status.size();
 }
-
-} // namespace Utils
+}

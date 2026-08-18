@@ -19,7 +19,6 @@
   #define POPEN wpopen
   #define PCLOSE pclose
   // i hate windows
-  #include "ihatewindows.h"
 #else
   using path_t = std::string;
   #define POPEN popen
@@ -34,6 +33,7 @@ private:
   size_t readPointer = 0;
   TritonPCMMode audioFormat;
   static constexpr int CHUNK_SIZE = 8;
+  std::string extraArgs = "";
   
   path_t buildCommand() const;
   void start();
@@ -44,7 +44,7 @@ private:
   PCM();
   ~PCM();
   
-  int load(const path_t& filePath, TritonPCMMode mode);
+  int load(const path_t& filePath, TritonPCMMode mode, std::string ffmpegArgs = "");
 
   int getNextChunk(uint8_t* buffer);
   // Read up to `size` bytes into buffer. Returns number of bytes read, 0 on EOF, -1 on error

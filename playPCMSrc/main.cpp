@@ -1,6 +1,7 @@
 #include "PCM.h"
-#include <TritonFinder.h>
 #include <TritonController.h>
+#include <TritonFinder.h>
+#include <Utils.h>
 #include <chrono>
 #include <csignal>
 #include <cstring>
@@ -8,7 +9,6 @@
 #include <iostream>
 #include <string>
 #include <thread>
-#include <Utils.h>
 
 TritonController* c = nullptr;
 TritonFinder finder;
@@ -19,18 +19,19 @@ struct Args {
   bool loop = false;
   path_t filePath;
   std::string help;
+  bool ffmpegArgsEnabled = false;
+  std::string ffmpegArgs;
 };
 
 TritonPCMMode mode = TritonPCMMode::Khz8_8Bit_ulaw;
 
 #ifdef _WIN32
-const std::string helpString = "Usage: .\\steam-haptics-player <file path>\n";
+const std::string helpString = "Usage: .\\steam-haptics-player.exe [-l|--loop] [--ffmpegArgs \"<args>\"] <file path>\n";
 #else
-const std::string helpString = "Usage: ./steam-haptics-player <file path>\n";
+const std::string helpString = "Usage: ./steam-haptics-player [-l|--loop] [--ffmpegArgs \"<args>\"] <file path>\n";
 #endif
 
-template <typename ArgGetter>
-Args parseArgs(int argc, ArgGetter argAt) {
+Args parseArgs(int argc, std::function<path_t(int index)> argAt) {
   Args args;
 
   for (int i = 1; i < argc; ++i) {
@@ -39,7 +40,14 @@ Args parseArgs(int argc, ArgGetter argAt) {
 
     if (argStr == "-l" || argStr == "--loop") {
       args.loop = true;
-    } else if ("--ffmpegArgs") {
+    } else if (argStr == "--ffmpegArgs") {
+      args.ffmpegArgsEnabled = true;
+      i += 1;
+      if (i >= argc) continue;
+
+      // sure is fun that converting between string and wstring was like that
+      std::string ffmpegArgs = std::filesystem::path(argAt(i)).string();
+      args.ffmpegArgs = ffmpegArgs;
     } else if (!argStr.empty() && argStr[0] == '-') {
       args.help = helpString;
       return args;
@@ -48,7 +56,7 @@ Args parseArgs(int argc, ArgGetter argAt) {
     }
   }
 
-  if (args.filePath.empty()) args.help = helpString;
+  if (args.filePath.empty() || (args.ffmpegArgsEnabled && args.ffmpegArgs.empty())) args.help = helpString;
   return args;
 }
 
@@ -63,14 +71,13 @@ int runPlayer(const Args& args) {
     return 1;
   }
 
-  if (c->connectionType == ETritonPairType::k_ETritonPairType_Wired) {
+  if (c->pairType == ETritonPairType::k_ETritonPairType_Wired) {
     // do wonder if itll be happy with that
     mode = TritonPCMMode::Khz8_16Bit;
     // after writing code where i was not sleep deprived, it was happy with it. :D
   }
 
-  
-  int loadResult = aou.load(args.filePath, mode);
+  int loadResult = aou.load(args.filePath, mode, args.ffmpegArgs);
   if (loadResult < 0) {
     if (loadResult == -2) {
       std::cout << "ffmpeg was not found on PATH\n";
@@ -92,19 +99,21 @@ int runPlayer(const Args& args) {
   std::string start = "Playing: ";
   std::optional<Utils::ProgressHelper> progress;
   const uint8_t* data = aou.pcmBytes.data();
-  
+
   int timescale = 1;
   if (mode == TritonPCMMode::Khz8_16Bit) timescale = 2;
+  do {
+    c->playStereoAudio(const_cast<uint8_t*>(data), aou.fileSize, mode, [&](int step, int* readPointer) {
+      if (!progress) {
+        progress.emplace(aou.fileSize, &start, step, Utils::Mode::TIME);
+        progress->setTimescale(timescale);
+      }
+      progress->step();
+    });
+    if (c->playThread.joinable()) c->playThread.join();
+    progress.reset();
+  } while (args.loop);
 
-  c->playStereoAudio(const_cast<uint8_t*>(data), aou.fileSize, mode, [&](int step) {
-    if (!progress) {
-      progress.emplace(aou.fileSize, &start, step, Utils::Mode::TIME);
-      progress->setTimescale(timescale);
-    }
-    progress->step();
-  });
-  if (c->playThread.joinable()) c->playThread.join();
-  
   std::cout << std::endl;
 
   return 0;
@@ -123,7 +132,7 @@ int wmain(int argc, wchar_t* argv[]) {
 #else
 int main(int argc, char* argv[]) {
   Args args = parseArgs(argc, [&](int index) -> path_t {
-    return std::string(argv[index]);
+    return std::filesystem::path(argv[index]).string();
   });
   return runPlayer(args);
 }
