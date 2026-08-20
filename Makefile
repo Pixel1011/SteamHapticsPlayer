@@ -5,6 +5,7 @@ UNICODE_FLAG ?= -municode
 LDFLAGS += -static
 BUILD_DIR := build/win
 EXT := .exe
+RANGE_LD_FLAG = -lwinmm 
 else
 HIDAPI_PKG ?= hidapi-hidraw
 CXXFLAGS += -fPIC
@@ -56,7 +57,7 @@ $(FLAGS_FILE): FORCE
 
 
 range$(EXT): $(RANGE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ)
-	g++ $(LDFLAGS) -o $@ $(RANGE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ) $(LDLIBS) -lwinmm
+	g++ $(LDFLAGS) -o $@ $(RANGE_OBJ) $(SHARED_OBJ) $(TRITON_OBJ) $(LDLIBS) $(RANGE_LD_FLAG)
 ifeq ($(filter release,$(MAKECMDGOALS)), release)
 	strip $@
 endif
