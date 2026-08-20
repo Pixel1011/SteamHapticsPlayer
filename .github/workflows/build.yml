@@ -1,0 +1,66 @@
+name: steam-haptics-player
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    name: Build (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            os: ubuntu-latest
+            sys: linux
+          - name: Windows
+            os: windows-latest
+            sys: msys2
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup MSYS2
+        if: matrix.sys == 'msys2'
+        uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-hidapi
+            mingw-w64-ucrt-x86_64-pkgconf
+            make
+
+      - name: Build (Linux)
+        if: matrix.sys == 'linux'
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential pkg-config libhidapi-dev
+          make -j4
+
+      - name: Build (Windows)
+        if: matrix.sys == 'msys2'
+        shell: msys2 {0}
+        run: |
+          mkdir dlls
+          make -j4
+          cd dlls
+          ldd "../steam-haptics-player.exe" | grep /ucrt64/ | awk '{print $3}' | xargs -i cp -v {} .
+          cd ..
+          zip -r dlls.zip ./dlls/
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ matrix.sys }}
+          path: |
+            *.exe
+            steam-haptics-player
+            dlls.zip
+          if-no-files-found: ignore
