@@ -12,7 +12,7 @@ I also made [Steam Controller Battery Monitor](https://github.com/Pixel1011/Stea
 
 ## Download
 [**Download the latest build here!**](https://github.com/Pixel1011/SteamHapticsPlayer/releases/latest)
-
+ 
 ## Usage
 
 
@@ -69,7 +69,7 @@ OR
 
 ```bash
 sudo apt update
-sudo apt install build-essential pkg-config libhidapi-dev ffmpeg
+sudo apt install build-essential pkg-config libhidapi-dev
 make
 ```
 
@@ -79,7 +79,6 @@ pacman -Syu
 
 pacman -S mingw-w64-ucrt-x86_64-gcc \
           mingw-w64-ucrt-x86_64-hidapi \
-          mingw-w64-ucrt-x86_64-ffmpeg \
           mingw-w64-ucrt-x86_64-make \
           mingw-w64-ucrt-x86_64-pkgconf
 
