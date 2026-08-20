@@ -49,12 +49,12 @@ jobs:
         if: matrix.sys == 'msys2'
         shell: msys2 {0}
         run: |
-          mkdir dlls
           make -j4
-          cd dlls
-          ldd "../steam-haptics-player.exe" | grep /ucrt64/ | awk '{print $3}' | xargs -i cp -v {} .
-          cd ..
-          zip -r dlls.zip ./dlls/
+#          mkdir dlls
+#          cd dlls
+#          ldd "../steam-haptics-player.exe" | grep /ucrt64/ | awk '{print $3}' | xargs -i cp -v {} .
+#          cd ..
+#          zip -r dlls.zip ./dlls/
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
