@@ -35,6 +35,7 @@ jobs:
             mingw-w64-ucrt-x86_64-gcc
             mingw-w64-ucrt-x86_64-hidapi
             mingw-w64-ucrt-x86_64-pkgconf
+            diffutils
             make
 
       - name: Build (Linux)
