@@ -43,18 +43,13 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y build-essential pkg-config libhidapi-dev
-          make -j4
+          make -j4 release
 
       - name: Build (Windows)
         if: matrix.sys == 'msys2'
         shell: msys2 {0}
         run: |
-          make -j4
-#          mkdir dlls
-#          cd dlls
-#          ldd "../steam-haptics-player.exe" | grep /ucrt64/ | awk '{print $3}' | xargs -i cp -v {} .
-#          cd ..
-#          zip -r dlls.zip ./dlls/
+          make -j4 release
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
@@ -63,5 +58,4 @@ jobs:
           path: |
             *.exe
             steam-haptics-player
-            dlls.zip
           if-no-files-found: ignore
