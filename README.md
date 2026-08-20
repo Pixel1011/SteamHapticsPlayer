@@ -113,12 +113,7 @@ Checks for ffmpeg
 [v1.0.0]
 Initial release!
 
-## maybe future stuff
- - volume control
- - looping music
-
 I spent a lot of time and effort reverse engineering the Steam controller's firmware to find the HID commands needed to do this so i would appreciate the stars very much!
-
 
 I was also heavily inspired to do this by CrazyCritic89's [SteamHapticsSinger](https://github.com/CrazyCritic89/SteamHapticsSinger). I suggest checking it out if you wish to play MIDI files on the steam controller!
 (they honestly can sound better than this at times)
