@@ -2,7 +2,7 @@ name: steam-haptics-player
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
 
 jobs:
   build:
