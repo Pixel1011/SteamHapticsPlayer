@@ -3,8 +3,6 @@ name: steam-haptics-player
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
 
 jobs:
   build:
